@@ -1,0 +1,64 @@
+/* Query 1 - Question 1 out of Question Set 1 */
+
+SELECT f.title AS film_title,
+       c.name AS category_name,
+       COUNT(r.rental_id) AS rental_count
+FROM category c
+JOIN film_category
+ON c.category_id = film_category.category_id
+JOIN film f
+ON film_category.film_id = f.film_id
+JOIN inventory i
+ON f.film_id = i.film_id
+JOIN rental r
+ON i.inventory_id = r.inventory_id
+WHERE c.name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music')
+GROUP BY 1,2
+ORDER BY 2,1;
+
+/* Query 2 - New Question related to the Question Set 1 */
+
+SELECT DISTINCT c.name AS category_name,
+       DATE_TRUNC('month', r.rental_date) AS rental_month,
+       COUNT(r.rental_id) AS rental_count
+FROM category c
+JOIN film_category
+ON c.category_id = film_category.category_id
+JOIN film f
+ON film_category.film_id = f.film_id
+JOIN inventory i
+ON f.film_id = i.film_id
+JOIN rental r
+ON i.inventory_id = r.inventory_id
+WHERE c.name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music')
+GROUP BY 1,2
+ORDER BY 2,3 DESC;
+
+/* Query 3 - Question 2 out of Question Set 1 */
+WITH rental_duration AS (SELECT DATE_PART('day', return_date - rental_date) FROM rental)
+
+SELECT f.title AS title, c.name AS category_name, rental_duration,
+       NTILE(4) OVER (ORDER BY rental_duration) AS standard_quartile
+FROM category c
+JOIN film_category
+ON c.category_id = film_category.category_id
+JOIN film f
+ON film_category.film_id = f.film_id
+WHERE c.name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music');
+
+/* Query 4 - Question 3 out of Question Set 1*/
+WITH rental_duration AS (SELECT DATE_PART('day', return_date - rental_date) FROM rental),
+
+	 t1 AS (SELECT c.name AS category_name, rental_duration,
+       NTILE(4) OVER (ORDER BY rental_duration) AS standard_quartile
+FROM category c
+JOIN film_category
+ON c.category_id = film_category.category_id
+JOIN film f
+ON film_category.film_id = f.film_id
+WHERE c.name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music'))
+
+SELECT DISTINCT category_name, standard_quartile,
+	   COUNT(category_name) OVER (PARTITION BY category_name, standard_quartile) AS count
+FROM t1
+ORDER BY 1,2;
